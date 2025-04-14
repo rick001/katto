@@ -57,47 +57,55 @@ app.use((req, res, next) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'public'));
 
-// Swagger definition for development only
-if (process.env.NODE_ENV !== 'production') {
-  const swaggerOptions = {
-    definition: {
-      openapi: '3.0.0',
-      info: {
-        title: 'Katto URL Shortener API',
-        version: '1.0.0',
-        description: 'API for shortening URLs with authentication',
-      },
-      servers: [
-        {
-          url: 'http://localhost:3000',
-          description: 'Development server'
+// Swagger definition
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Katto URL Shortener API',
+      version: '1.0.0',
+      description: 'API for shortening URLs with authentication',
+    },
+    servers: [
+      {
+        url: process.env.BASE_URL,
+        description: 'Production server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
         },
-        {
-          url: process.env.BASE_URL,
-          description: 'Production server'
-        }
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT'
-          },
-          apiKeyAuth: {
-            type: 'apiKey',
-            in: 'header',
-            name: 'x-api-key'
-          }
+        apiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-api-key'
         }
       }
-    },
-    apis: ['./routes/*.js'],
-  };
+    }
+  },
+  apis: ['./routes/*.js'],
+};
 
-  const swaggerDocs = swaggerJsdoc(swaggerOptions);
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-}
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+
+// Add basic auth to Swagger UI in production
+const swaggerUiOptions = {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "Katto URL Shortener API",
+  customfavIcon: "/favicon.ico"
+};
+
+// Serve Swagger UI with security headers
+app.use('/api-docs', (req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+}, swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerUiOptions));
 
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
