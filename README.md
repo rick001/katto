@@ -2,19 +2,18 @@
 
 A modern, secure URL shortening service built with Node.js, Express, and MongoDB. Features include user authentication, custom short codes, expiration dates, and click tracking.
 
-![Katto URL Shortener](https://i.ibb.co/k64PRvrK/image.png)
-
 ## Features
 
 - 🔐 **User Authentication**
   - JWT-based authentication
   - API key support for programmatic access
   - Secure password hashing
+  - Modal-based login/register interface
 
 - 🔗 **URL Management**
   - Create shortened URLs
   - Custom short codes (optional)
-  - Expiration dates
+  - Configurable expiration dates (for authenticated users)
   - Click tracking
   - URL validation
 
@@ -22,19 +21,23 @@ A modern, secure URL shortening service built with Node.js, Express, and MongoDB
   - Rate limiting
   - CORS protection
   - XSS protection
+  - Content Security Policy (CSP)
   - Security headers
   - Input validation
 
 - 📱 **Modern UI**
   - Responsive design
   - Clean, intuitive interface
-  - Copy to clipboard
+  - Modal-based authentication
+  - Copy to clipboard with fallback
   - Success/error notifications
+  - Custom expiration options for logged-in users
 
 - 📚 **API Documentation**
   - Swagger/OpenAPI documentation
   - API endpoint documentation
   - Authentication examples
+  - Environment-specific Swagger configuration
 
 ## Prerequisites
 
@@ -46,8 +49,8 @@ A modern, secure URL shortening service built with Node.js, Express, and MongoDB
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/rick001/katto.git
-   cd katto
+   git clone https://github.com/yourusername/katto-url-shortener.git
+   cd katto-url-shortener
    ```
 
 2. Install dependencies:
@@ -61,7 +64,7 @@ A modern, secure URL shortening service built with Node.js, Express, and MongoDB
    BASE_URL=http://localhost:3000
    JWT_SECRET=your-jwt-secret
    JWT_EXPIRE=30d
-   PORT=3000
+   DEFAULT_API_KEY=your-default-api-key
    ```
 
 4. Start the development server:
@@ -75,6 +78,7 @@ A modern, secure URL shortening service built with Node.js, Express, and MongoDB
 
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login and get JWT token
+- `GET /api/auth/me` - Get current user info
 
 ### URL Operations
 
@@ -92,46 +96,43 @@ For detailed API documentation, visit `/api-docs` when running the server.
 | BASE_URL | Base URL for shortened links | `http://localhost:3000` |
 | JWT_SECRET | Secret for JWT signing | Required |
 | JWT_EXPIRE | JWT expiration time | `30d` |
-| PORT | Server port | `3000` |
-
-## Production Deployment
-
-1. Set up environment variables in `.env.production`
-2. Install PM2 globally:
-   ```bash
-   npm install -g pm2
-   ```
-
-3. Build and start the application:
-   ```bash
-   npm run build
-   pm2 start server.js --name katto-url-shortener
-   ```
+| DEFAULT_API_KEY | Default API key for non-authenticated users | Required |
 
 ## Security Features
 
-- Rate limiting for API endpoints
-- Strict rate limiting for authentication routes
-- Request size limiting
+- Rate limiting for API endpoints (100 requests per 15 minutes)
+- Strict rate limiting for authentication routes (5 attempts per hour)
+- Request size limiting (10kb)
 - Security headers (Helmet)
+- Content Security Policy (CSP)
 - CORS protection
 - XSS protection
 - Input validation and sanitization
+- Secure password hashing
+- JWT-based authentication
+- API key authentication
+
+## Frontend Features
+
+- Modern, responsive design
+- Modal-based authentication
+- Custom URL shortening options
+  - Custom aliases
+  - Expiration dates (for authenticated users)
+- Click tracking
+- Copy to clipboard with modern API and fallback
+- Success/error notifications
+- Persistent authentication state
+- Mobile-friendly interface
 
 ## Development
 
-### Running Tests
-```bash
-npm test
-```
-
-### Linting
-```bash
-npm run lint
-```
-
-### API Documentation
-The API documentation is available at `/api-docs` when running in development mode.
+The project uses:
+- EJS for server-side rendering
+- Modern JavaScript (ES6+)
+- CSS3 with custom properties
+- Font Awesome icons
+- Google Fonts (Inter)
 
 ## Contributing
 
@@ -151,6 +152,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - MongoDB for the database
 - JWT for authentication
 - Swagger for API documentation
+- Font Awesome for icons
+- Google Fonts for typography
 
 ## Support
 
