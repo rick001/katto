@@ -49,8 +49,8 @@ A modern, secure URL shortening service built with Node.js, Express, and MongoDB
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/katto-url-shortener.git
-   cd katto-url-shortener
+   git clone https://github.com/rick-001/katto.git
+   cd katto
    ```
 
 2. Install dependencies:
