@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .text { font-family: Arial, sans-serif; font-weight: bold; }
+    .primary { fill: #4a90e2; }
+    .secondary { fill: #2c3e50; }
+  </style>
+  <text x="10" y="28" class="text primary" font-size="24">Katto</text>
+  <path class="secondary" d="M100,15 L110,20 L100,25 Z" />
+  <line x1="85" y1="20" x2="100" y2="20" stroke="#2c3e50" stroke-width="2"/>
+</svg> 

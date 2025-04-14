@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Url = require('../models/Url');
-const { nanoid } = require('nanoid/non-secure');
-const validUrl = require('valid-url');
+const User = require('../models/User');
 const { protect, apiKeyAuth } = require('../middleware/auth');
+const { nanoid } = require('nanoid');
+const validUrl = require('valid-url');
 
 const baseUrl = process.env.BASE_URL;
 
@@ -12,9 +13,8 @@ const baseUrl = process.env.BASE_URL;
  * /api/url/shorten:
  *   post:
  *     summary: Create a shortened URL
- *     tags: [URL]
+ *     tags: [URLs]
  *     security:
- *       - bearerAuth: []
  *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
@@ -27,77 +27,75 @@ const baseUrl = process.env.BASE_URL;
  *             properties:
  *               originalUrl:
  *                 type: string
- *                 description: The original URL to be shortened
  *               customCode:
  *                 type: string
- *                 description: Optional custom short code
  *               expiresIn:
  *                 type: string
- *                 description: Optional expiration time (e.g., '1d', '1w', '1m', '1y')
+ *                 enum: [1d, 7d, 30d, 90d, 1y]
  *     responses:
- *       200:
+ *       201:
  *         description: URL shortened successfully
  *       400:
  *         description: Invalid URL or custom code already exists
  *       401:
- *         description: Unauthorized
+ *         description: Unauthorized - Missing or invalid API key
  */
-router.post('/shorten', [protect, apiKeyAuth], async (req, res) => {
-  const { originalUrl, customCode, expiresIn } = req.body;
-
-  // Ensure URL has http:// or https://
-  const urlToShorten = originalUrl.startsWith('http') ? originalUrl : `https://${originalUrl}`;
-
-  if (!validUrl.isUri(urlToShorten)) {
-    return res.status(400).json({ error: 'Invalid original URL' });
-  }
-
-  const shortCode = customCode || nanoid(8);
-
+router.post('/shorten', apiKeyAuth, async (req, res) => {
   try {
-    let url = await Url.findOne({ shortCode });
+    const { originalUrl, customCode, expiresIn } = req.body;
+    
+    // Validate URL
+    try {
+      new URL(originalUrl);
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid URL' });
+    }
 
-    if (url && customCode) {
+    // Get user (authenticated or default)
+    let user;
+    if (req.user) {
+      user = req.user;
+    } else {
+      // For non-authenticated requests, use the default user
+      user = await User.getDefaultUser();
+    }
+
+    // Generate short code
+    const shortCode = customCode || nanoid(6);
+
+    // Check if custom code already exists
+    const existingUrl = await Url.findOne({ shortCode });
+    if (existingUrl) {
       return res.status(400).json({ error: 'Custom code already exists' });
     }
 
-    // Calculate expiration date if provided
+    // Calculate expiration date
     let expiresAt;
-    if (expiresIn) {
-      const now = new Date();
-      const [value, unit] = expiresIn.match(/(\d+)([dwmy])/).slice(1);
-      const multiplier = {
-        d: 24 * 60 * 60 * 1000,    // days
-        w: 7 * 24 * 60 * 60 * 1000, // weeks
-        m: 30 * 24 * 60 * 60 * 1000, // months (approximate)
-        y: 365 * 24 * 60 * 60 * 1000 // years
-      }[unit];
-      
-      expiresAt = new Date(now.getTime() + (value * multiplier));
+    if (req.user && expiresIn) {
+      const [value, unit] = expiresIn.match(/(\d+)([dmy])/).slice(1);
+      const multiplier = { d: 1, m: 30, y: 365 }[unit];
+      expiresAt = new Date(Date.now() + value * multiplier * 24 * 60 * 60 * 1000);
+    } else {
+      // Default 30 days expiration for non-authenticated users
+      expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     }
 
-    if (!url) {
-      url = new Url({
-        shortCode,
-        originalUrl: urlToShorten,
-        user: req.user._id,
-        expiresAt
-      });
-      await url.save();
-    }
-
-    return res.json({ 
+    // Create URL
+    const url = await Url.create({
+      originalUrl,
       shortCode,
-      originalUrl: urlToShorten,
-      shortUrl: `${baseUrl}/${shortCode}`,
+      user: user._id,
+      expiresAt
+    });
+
+    res.status(201).json({
+      shortCode: url.shortCode,
+      originalUrl: url.originalUrl,
       expiresAt: url.expiresAt
     });
   } catch (err) {
     console.error(err);
-    if (err.name === 'ValidationError') {
-      return res.status(400).json({ error: err.message });
-    }
-    res.status(500).send('Server error');
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

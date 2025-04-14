@@ -181,4 +181,39 @@ router.post('/login', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/default-key:
+ *   get:
+ *     summary: Get the default user's API key
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Default API key retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 apiKey:
+ *                   type: string
+ *       500:
+ *         description: Server error
+ */
+router.get('/default-key', (req, res, next) => {
+  // Only allow this endpoint in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+  next();
+}, async (req, res) => {
+  try {
+    const defaultUser = await User.getDefaultUser();
+    res.json({ apiKey: defaultUser.apiKey });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router; 

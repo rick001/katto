@@ -2,84 +2,93 @@ let token = localStorage.getItem('token');
 let apiKey = localStorage.getItem('apiKey');
 const baseUrl = window.BASE_URL;
 
+// Show login modal
+function showLogin() {
+    document.getElementById('loginModal').classList.add('active');
+}
+
+// Hide login modal
+function hideLogin() {
+    document.getElementById('loginModal').classList.remove('active');
+}
+
+// Show register modal
+function showRegister() {
+    document.getElementById('registerModal').classList.add('active');
+}
+
+// Hide register modal
+function hideRegister() {
+    document.getElementById('registerModal').classList.remove('active');
+}
+
 // Check if user is logged in
-function checkAuth() {
-    const loginButton = document.getElementById('loginButton');
-    const logoutButton = document.getElementById('logoutButton');
+async function checkAuth() {
+    const token = localStorage.getItem('token');
+    const apiKey = localStorage.getItem('apiKey');
     const expirationOptions = document.getElementById('expirationOptions');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     if (token && apiKey) {
-        loginButton.style.display = 'none';
-        logoutButton.style.display = 'inline-block';
-        expirationOptions.style.display = 'block';
+        try {
+            const response = await fetch('/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'x-api-key': apiKey
+                }
+            });
+
+            if (response.ok) {
+                // User is authenticated
+                expirationOptions.style.display = 'block';
+                loginBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
+                hideLogin();
+                hideRegister();
+            } else {
+                // Token expired or invalid
+                handleLogout();
+            }
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            handleLogout();
+        }
     } else {
-        loginButton.style.display = 'inline-block';
-        logoutButton.style.display = 'none';
-        expirationOptions.style.display = 'none';
-        // Clear any stored tokens if they're incomplete
-        localStorage.removeItem('token');
-        localStorage.removeItem('apiKey');
-        token = null;
-        apiKey = null;
+        handleLogout();
     }
 }
 
-// Show login form
-function showLoginForm() {
-    document.querySelector('.auth-section').style.display = 'flex';
-    document.getElementById('loginForm').style.display = 'block';
-    document.getElementById('registerForm').style.display = 'none';
-}
-
-// Hide login form
-function hideLoginForm() {
-    document.querySelector('.auth-section').style.display = 'none';
+// Handle logout state
+function handleLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('apiKey');
+    token = null;
+    apiKey = null;
+    
+    const expirationOptions = document.getElementById('expirationOptions');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    expirationOptions.style.display = 'none';
+    loginBtn.style.display = 'block';
+    registerBtn.style.display = 'block';
+    logoutBtn.style.display = 'none';
 }
 
 // Logout user
 function logout() {
-    try {
-        // Clear all auth-related data
-        localStorage.removeItem('token');
-        localStorage.removeItem('apiKey');
-        token = null;
-        apiKey = null;
-
-        // Reset UI state
-        document.getElementById('originalUrl').value = '';
-        document.getElementById('customCode').value = '';
-        document.getElementById('expiration').value = '';
-        document.getElementById('result').style.display = 'none';
-        
-        // Update auth state
-        checkAuth();
-        
-        // Show success message
-        showMessage('Logged out successfully', 'success');
-    } catch (error) {
-        console.error('Logout error:', error);
-        showMessage('Error during logout', 'error');
-    }
-}
-
-// Toggle between login and register forms
-function toggleForms() {
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-    }
+    handleLogout();
+    showMessage('Logged out successfully', 'success');
 }
 
 // Register new user
 async function register() {
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
 
     try {
         const response = await fetch('/api/auth/register', {
@@ -97,7 +106,7 @@ async function register() {
             apiKey = data.apiKey;
             localStorage.setItem('token', token);
             localStorage.setItem('apiKey', apiKey);
-            hideLoginForm();
+            hideRegister();
             checkAuth();
             showMessage('Registration successful!', 'success');
         } else {
@@ -110,8 +119,8 @@ async function register() {
 
 // Login user
 async function login() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
 
     try {
         const response = await fetch('/api/auth/login', {
@@ -129,7 +138,7 @@ async function login() {
             apiKey = data.apiKey;
             localStorage.setItem('token', token);
             localStorage.setItem('apiKey', apiKey);
-            hideLoginForm();
+            hideLogin();
             checkAuth();
             showMessage('Login successful!', 'success');
         } else {
@@ -140,29 +149,66 @@ async function login() {
     }
 }
 
-// Shorten URL
+// Function to get default API key
+async function getDefaultApiKey() {
+    try {
+        const response = await fetch('/api/auth/default-key');
+        if (response.status === 404) {
+            // In production, use a pre-configured default API key
+            return baseUrl.includes('localhost') ? null : process.env.DEFAULT_API_KEY;
+        }
+        const data = await response.json();
+        if (response.ok) {
+            return data.apiKey;
+        }
+        throw new Error(data.error || 'Failed to get default API key');
+    } catch (error) {
+        console.error('Error getting default API key:', error);
+        throw error;
+    }
+}
+
+// Function to shorten URL
 async function shortenUrl() {
     const originalUrl = document.getElementById('originalUrl').value;
     const customCode = document.getElementById('customCode').value;
-    const expiration = document.getElementById('expiration').value;
-
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-
-    const body = {
-        originalUrl,
-        customCode: customCode || undefined
-    };
-
-    // Only add authentication headers and expiration if logged in
-    if (token && apiKey) {
-        headers['x-api-key'] = apiKey;
-        headers['Authorization'] = `Bearer ${token}`;
-        body.expiresIn = expiration;
+    const expirationSelect = document.getElementById('expirationSelect');
+    const expirationOptions = document.getElementById('expirationOptions');
+    
+    if (!originalUrl) {
+        showMessage('Please enter a URL', 'error');
+        return;
     }
 
     try {
+        const token = localStorage.getItem('token');
+        let apiKey = localStorage.getItem('apiKey');
+        
+        // If not logged in, get the default API key
+        if (!token || !apiKey) {
+            apiKey = await getDefaultApiKey();
+        }
+        
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey
+        };
+        
+        // Add auth token if user is logged in
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const body = {
+            originalUrl,
+            customCode: customCode || undefined
+        };
+
+        // Only add expiration if user is logged in and expiration options are visible
+        if (expirationOptions.style.display !== 'none' && expirationSelect.value) {
+            body.expiresIn = expirationSelect.value;
+        }
+
         const response = await fetch('/api/url/shorten', {
             method: 'POST',
             headers,
@@ -171,77 +217,97 @@ async function shortenUrl() {
 
         const data = await response.json();
 
-        if (response.ok) {
-            const shortUrl = `${baseUrl}/${data.shortCode}`;
-            document.getElementById('shortenedUrl').value = shortUrl;
-            document.getElementById('originalUrlDisplay').textContent = data.originalUrl;
-            document.getElementById('expiresAt').textContent = new Date(data.expiresAt).toLocaleString();
-            document.getElementById('result').style.display = 'block';
-            showMessage('URL shortened successfully!', 'success');
-        } else {
-            if (response.status === 401 && token) {
-                // If unauthorized and was logged in, clear tokens and show auth section
-                localStorage.removeItem('token');
-                localStorage.removeItem('apiKey');
-                token = null;
-                apiKey = null;
-                checkAuth();
-                showMessage('Session expired. Please login again.', 'error');
-            } else {
-                showMessage(data.error || 'Failed to shorten URL', 'error');
-            }
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to shorten URL');
         }
+
+        const shortenedUrl = `${baseUrl}/${data.shortCode}`;
+        document.getElementById('shortenedUrl').value = shortenedUrl;
+        document.getElementById('originalUrlDisplay').textContent = data.originalUrl;
+        document.getElementById('expiresAt').textContent = new Date(data.expiresAt).toLocaleString();
+        document.getElementById('result').style.display = 'block';
+        showMessage('URL shortened successfully!', 'success');
     } catch (error) {
-        showMessage('An error occurred', 'error');
+        showMessage(error.message, 'error');
     }
 }
 
 // Copy shortened URL to clipboard
-function copyToClipboard() {
-    const shortenedUrl = document.getElementById('shortenedUrl');
-    shortenedUrl.select();
-    document.execCommand('copy');
-    showMessage('URL copied to clipboard!', 'success');
+async function copyToClipboard() {
+    const shortenedUrl = document.getElementById('shortenedUrl').value;
+    try {
+        await navigator.clipboard.writeText(shortenedUrl);
+        showMessage('URL copied to clipboard!', 'success');
+    } catch (err) {
+        // Fallback for older browsers
+        const shortenedUrlInput = document.getElementById('shortenedUrl');
+        shortenedUrlInput.select();
+        try {
+            document.execCommand('copy');
+            showMessage('URL copied to clipboard!', 'success');
+        } catch (err) {
+            showMessage('Failed to copy URL', 'error');
+        }
+    }
 }
 
 // Show message to user
 function showMessage(message, type) {
-    const errorDiv = document.getElementById('error');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    errorDiv.style.backgroundColor = type === 'error' ? '#fde8e8' : '#e8fde8';
-    errorDiv.style.color = type === 'error' ? '#e74c3c' : '#2ecc71';
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = message;
+    messageDiv.style.display = 'block';
+    messageDiv.className = `message ${type}`;
 
     setTimeout(() => {
-        errorDiv.style.display = 'none';
+        messageDiv.style.display = 'none';
     }, 3000);
 }
 
-// Add event listeners when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Auth buttons
-    document.getElementById('loginButton').addEventListener('click', showLoginForm);
-    document.getElementById('logoutButton').addEventListener('click', logout);
-    document.getElementById('closeAuthButton').addEventListener('click', hideLoginForm);
+// Add event listeners when the document loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication status
+    checkAuth();
     
-    // Form submissions
-    document.getElementById('loginSubmitButton').addEventListener('click', login);
-    document.getElementById('registerSubmitButton').addEventListener('click', register);
+    // Add click listeners to auth buttons
+    document.getElementById('loginBtn').addEventListener('click', showLogin);
+    document.getElementById('registerBtn').addEventListener('click', showRegister);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
     
-    // Form toggles
-    document.getElementById('showRegisterButton').addEventListener('click', (e) => {
-        e.preventDefault();
-        toggleForms();
-    });
-    document.getElementById('showLoginButton').addEventListener('click', (e) => {
-        e.preventDefault();
-        toggleForms();
+    // Add click listeners to modal close buttons
+    document.getElementById('closeLoginModal').addEventListener('click', hideLogin);
+    document.getElementById('closeRegisterModal').addEventListener('click', hideRegister);
+    
+    // Close modals when clicking outside
+    document.getElementById('loginModal').addEventListener('click', function(e) {
+        if (e.target === this) hideLogin();
     });
     
-    // URL shortening
+    document.getElementById('registerModal').addEventListener('click', function(e) {
+        if (e.target === this) hideRegister();
+    });
+    
+    // Add form submit listeners
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        login();
+    });
+    
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        register();
+    });
+
+    // Add click listener for shorten button
     document.getElementById('shortenButton').addEventListener('click', shortenUrl);
+
+    // Add click listener for copy button
     document.getElementById('copyButton').addEventListener('click', copyToClipboard);
     
-    // Initialize auth state
-    checkAuth();
+    // Add escape key listener to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideLogin();
+            hideRegister();
+        }
+    });
 }); 

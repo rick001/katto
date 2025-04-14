@@ -19,13 +19,34 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
-      fontSrc: ["'self'", "cdnjs.cloudflare.com"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        "cdnjs.cloudflare.com"
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "cdnjs.cloudflare.com",
+        "fonts.googleapis.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "cdnjs.cloudflare.com",
+        "fonts.gstatic.com"
+      ],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"]
+      connectSrc: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
     }
-  }
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin" },
+  crossOriginResourcePolicy: { policy: "same-site" }
 }));
 app.use(cors());
 
@@ -89,6 +110,13 @@ const swaggerOptions = {
   },
   apis: ['./routes/*.js'],
 };
+
+// Filter out default-key endpoint in production
+if (process.env.NODE_ENV === 'production') {
+  swaggerOptions.apis = ['./routes/url.js']; // Only include URL routes
+} else {
+  swaggerOptions.apis = ['./routes/*.js']; // Include all routes in development
+}
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 

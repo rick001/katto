@@ -3,48 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Katto - URL Shortener</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Katto - Modern URL Shortener</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Katto - A modern, secure URL shortener service. Create short, memorable links instantly.">
+    <meta name="keywords" content="url shortener, link shortener, short url, katto">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<%= BASE_URL %>">
+    <meta property="og:title" content="Katto - Modern URL Shortener">
+    <meta property="og:description" content="Create short, memorable links instantly with our modern URL shortener.">
+    <meta property="og:image" content="<%= BASE_URL %>/images/og-image.svg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="<%= BASE_URL %>">
+    <meta property="twitter:title" content="Katto - Modern URL Shortener">
+    <meta property="twitter:description" content="Create short, memorable links instantly with our modern URL shortener.">
+    <meta property="twitter:image" content="<%= BASE_URL %>/images/og-image.svg">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+    <link rel="alternate icon" type="image/png" href="/images/favicon.png">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>
-        window.BASE_URL = '<%= BASE_URL %>';
-    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <div class="container">
-        <nav class="navbar">
-            <div class="logo">
-                <i class="fas fa-link"></i>
-                <span>Katto</span>
-            </div>
-            <div class="auth-buttons">
-                <button id="loginButton" class="btn btn-outline">Login</button>
-                <button id="logoutButton" class="btn btn-outline" style="display: none;">Logout</button>
-            </div>
-        </nav>
+    <header>
+        <a href="/" class="logo-link">
+            <img src="/logo.svg" alt="Katto URL Shortener" class="logo">
+        </a>
+        <div class="auth-buttons">
+            <button id="loginBtn" class="btn btn-primary">Login</button>
+            <button id="registerBtn" class="btn btn-secondary">Register</button>
+            <button id="logoutBtn" class="btn btn-secondary" style="display: none;">Logout</button>
+        </div>
+    </header>
 
+    <div class="container">
         <main class="main-content">
             <div class="hero">
                 <h1>Shorten Your Links</h1>
                 <p>Create short, memorable links that redirect to your long URLs</p>
             </div>
 
-            <div class="url-form">
+            <div class="url-form card">
                 <div class="input-group">
-                    <i class="fas fa-globe input-icon"></i>
-                    <input type="url" id="originalUrl" placeholder="Enter your long URL" class="input-field">
+                    <i class="fas fa-globe"></i>
+                    <input type="url" id="originalUrl" placeholder="Paste your long URL here" required>
                 </div>
-                
                 <div class="options-row">
-                    <div class="input-group small">
-                        <i class="fas fa-tag input-icon"></i>
-                        <input type="text" id="customCode" placeholder="Custom code (optional)" class="input-field">
+                    <div class="input-group">
+                        <i class="fas fa-tag"></i>
+                        <input type="text" id="customCode" placeholder="Custom alias (optional)">
                     </div>
-                    
-                    <div class="input-group small" id="expirationOptions" style="display: none;">
-                        <i class="fas fa-clock input-icon"></i>
-                        <select id="expiration" class="input-field">
-                            <option value="">No expiration</option>
+                    <div id="expirationOptions" class="input-group" style="display: none;">
+                        <i class="fas fa-clock"></i>
+                        <select id="expirationSelect">
+                            <option value="">Default (30 days)</option>
                             <option value="1d">1 day</option>
                             <option value="7d">7 days</option>
                             <option value="30d">30 days</option>
@@ -53,75 +77,89 @@
                         </select>
                     </div>
                 </div>
-
                 <button id="shortenButton" class="btn btn-primary">
-                    <i class="fas fa-cut"></i> Shorten URL
+                    <i class="fas fa-cut"></i>
+                    Shorten URL
                 </button>
             </div>
 
-            <div id="result" class="result-section" style="display: none;">
-                <div class="result-card">
-                    <div class="result-header">
-                        <h3>Your Shortened URL</h3>
-                        <button id="copyButton" class="btn btn-icon">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <input type="text" id="shortenedUrl" readonly class="input-field">
-                    <div class="result-details">
-                        <div class="detail-item">
+            <div id="result" class="result card" style="display: none;">
+                <div class="result-header">
+                    <h3>Your Shortened URL</h3>
+                    <button id="copyButton" class="btn btn-icon" title="Copy to clipboard">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <div class="result-content">
+                    <input type="text" id="shortenedUrl" readonly>
+                    <div class="url-info">
+                        <div class="info-item">
                             <i class="fas fa-link"></i>
                             <span>Original URL: </span>
-                            <span id="originalUrlDisplay" class="detail-value"></span>
+                            <span id="originalUrlDisplay" class="value"></span>
                         </div>
-                        <div class="detail-item">
+                        <div class="info-item">
                             <i class="fas fa-calendar"></i>
                             <span>Expires: </span>
-                            <span id="expiresAt" class="detail-value"></span>
+                            <span id="expiresAt" class="value"></span>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div id="error" class="error-message" style="display: none;"></div>
         </main>
 
-        <div class="auth-section" style="display: none;">
-            <div class="auth-container">
-                <button id="closeAuthButton" class="close-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-                
-                <div id="loginForm">
-                    <h2>Login</h2>
-                    <div class="input-group">
-                        <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" id="email" placeholder="Email" class="input-field">
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="password" placeholder="Password" class="input-field">
-                    </div>
-                    <button id="loginSubmitButton" class="btn btn-primary">Login</button>
-                    <p class="auth-switch">Don't have an account? <a href="#" id="showRegisterButton">Register</a></p>
-                </div>
+        <footer class="footer">
+            <p>© <%= new Date().getFullYear() %> Katto. All rights reserved.</p>
+        </footer>
 
-                <div id="registerForm" style="display: none;">
-                    <h2>Register</h2>
-                    <div class="input-group">
-                        <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" id="regEmail" placeholder="Email" class="input-field">
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="regPassword" placeholder="Password" class="input-field">
-                    </div>
-                    <button id="registerSubmitButton" class="btn btn-primary">Register</button>
-                    <p class="auth-switch">Already have an account? <a href="#" id="showLoginButton">Login</a></p>
+        <div id="message" class="message"></div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close" id="closeLoginModal">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="modal-title">Login to Your Account</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
         </div>
     </div>
-    <script src="script.js"></script>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close" id="closeRegisterModal">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="modal-title">Create an Account</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        window.BASE_URL = '<%= BASE_URL %>';
+    </script>
+    <script src="/script.js"></script>
 </body>
 </html> 
