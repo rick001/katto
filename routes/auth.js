@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const crypto = require('crypto');
 
 /**
  * @swagger
@@ -202,27 +203,12 @@ router.post('/login', async (req, res) => {
  */
 router.get('/default-key', async (req, res) => {
   try {
-    // Create or get default user
-    const defaultUser = await User.findOne({ email: 'default@katto.ink' });
+    // Use the static method from User model
+    const defaultUser = await User.getDefaultUser();
     
-    if (!defaultUser) {
-      // Create a new default user if it doesn't exist
-      const newDefaultUser = await User.create({
-        email: 'default@katto.ink',
-        password: Math.random().toString(36).slice(-8), // Random password
-        isDefault: true
-      });
-      
-      // Generate API key for default user
-      newDefaultUser.generateApiKey();
-      await newDefaultUser.save();
-      
-      return res.json({ apiKey: newDefaultUser.apiKey });
-    }
-    
-    // Return existing default user's API key
+    // Ensure the default user has an API key
     if (!defaultUser.apiKey) {
-      defaultUser.generateApiKey();
+      defaultUser.apiKey = crypto.randomBytes(20).toString('hex');
       await defaultUser.save();
     }
     

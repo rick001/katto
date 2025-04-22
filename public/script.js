@@ -61,7 +61,11 @@ async function checkAuth() {
             handleLogout();
         }
     } else {
-        handleLogout();
+        // User is not logged in
+        expirationOptions.style.display = 'none';
+        loginBtn.style.display = 'block';
+        registerBtn.style.display = 'block';
+        logoutBtn.style.display = 'none';
     }
 }
 
@@ -187,16 +191,17 @@ async function shortenUrl() {
         // If not logged in, get the default API key
         if (!token || !apiKey) {
             try {
-                apiKey = await getDefaultApiKey();
+                const response = await fetch('/api/auth/default-key');
+                if (!response.ok) {
+                    throw new Error('Failed to get default API key');
+                }
+                const data = await response.json();
+                apiKey = data.apiKey;
             } catch (error) {
-                showMessage(error.message, 'error');
+                console.error('Error getting default API key:', error);
+                showMessage('Failed to get default API key. Please try logging in.', 'error');
                 return;
             }
-        }
-        
-        if (!apiKey) {
-            showMessage('No API key available. Please log in.', 'error');
-            return;
         }
         
         const headers = {
