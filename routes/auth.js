@@ -200,19 +200,36 @@ router.post('/login', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.get('/default-key', (req, res, next) => {
-  // Only allow this endpoint in development mode
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(404).json({ error: 'Route not found' });
-  }
-  next();
-}, async (req, res) => {
+router.get('/default-key', async (req, res) => {
   try {
-    const defaultUser = await User.getDefaultUser();
+    // Create or get default user
+    const defaultUser = await User.findOne({ email: 'default@katto.ink' });
+    
+    if (!defaultUser) {
+      // Create a new default user if it doesn't exist
+      const newDefaultUser = await User.create({
+        email: 'default@katto.ink',
+        password: Math.random().toString(36).slice(-8), // Random password
+        isDefault: true
+      });
+      
+      // Generate API key for default user
+      newDefaultUser.generateApiKey();
+      await newDefaultUser.save();
+      
+      return res.json({ apiKey: newDefaultUser.apiKey });
+    }
+    
+    // Return existing default user's API key
+    if (!defaultUser.apiKey) {
+      defaultUser.generateApiKey();
+      await defaultUser.save();
+    }
+    
     res.json({ apiKey: defaultUser.apiKey });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Default key error:', err);
+    res.status(500).json({ error: 'Failed to get default API key' });
   }
 });
 

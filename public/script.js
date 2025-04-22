@@ -5,21 +5,25 @@ const baseUrl = window.BASE_URL;
 // Show login modal
 function showLogin() {
     document.getElementById('loginModal').classList.add('active');
+    document.getElementById('loginEmail').focus();
 }
 
 // Hide login modal
 function hideLogin() {
     document.getElementById('loginModal').classList.remove('active');
+    document.getElementById('loginForm').reset();
 }
 
 // Show register modal
 function showRegister() {
     document.getElementById('registerModal').classList.add('active');
+    document.getElementById('registerEmail').focus();
 }
 
 // Hide register modal
 function hideRegister() {
     document.getElementById('registerModal').classList.remove('active');
+    document.getElementById('registerForm').reset();
 }
 
 // Check if user is logged in
@@ -153,18 +157,14 @@ async function login() {
 async function getDefaultApiKey() {
     try {
         const response = await fetch('/api/auth/default-key');
-        if (response.status === 404) {
-            // In production, use a pre-configured default API key
-            return baseUrl.includes('localhost') ? null : process.env.DEFAULT_API_KEY;
+        if (!response.ok) {
+            throw new Error('Failed to get default API key. Please try logging in.');
         }
         const data = await response.json();
-        if (response.ok) {
-            return data.apiKey;
-        }
-        throw new Error(data.error || 'Failed to get default API key');
+        return data.apiKey;
     } catch (error) {
         console.error('Error getting default API key:', error);
-        throw error;
+        throw new Error('Failed to get default API key. Please try logging in.');
     }
 }
 
@@ -186,7 +186,17 @@ async function shortenUrl() {
         
         // If not logged in, get the default API key
         if (!token || !apiKey) {
-            apiKey = await getDefaultApiKey();
+            try {
+                apiKey = await getDefaultApiKey();
+            } catch (error) {
+                showMessage(error.message, 'error');
+                return;
+            }
+        }
+        
+        if (!apiKey) {
+            showMessage('No API key available. Please log in.', 'error');
+            return;
         }
         
         const headers = {
@@ -289,12 +299,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add form submit listeners
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        login();
+        login().catch(error => {
+            showMessage(error.message || 'Login failed', 'error');
+        });
     });
     
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        register();
+        register().catch(error => {
+            showMessage(error.message || 'Registration failed', 'error');
+        });
     });
 
     // Add click listener for shorten button

@@ -21,7 +21,12 @@ const UserSchema = new mongoose.Schema({
   },
   apiKey: {
     type: String,
-    unique: true
+    unique: true,
+    sparse: true
+  },
+  isDefault: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,
